@@ -1,1 +1,1 @@
-print("Bugblock is live")
+print("BugBlock is alive!")
