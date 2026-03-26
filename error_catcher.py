@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from ai_engine import question_user, session_summary
 
 def run_code(filename):
     result = subprocess.run(
@@ -7,11 +8,10 @@ def run_code(filename):
         capture_output=True,
         text=True
     )
-    
     if result.returncode != 0:
-        print("Bug detected!")
-        print(result.stderr)
+        question_user(result.stderr)
     else:
         print("Code ran fine!")
 
 run_code("main.py")
+session_summary()

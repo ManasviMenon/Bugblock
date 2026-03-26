@@ -1,1 +1,1 @@
-print("BugBlock is alive!")
+int("abc")
