@@ -29,7 +29,7 @@ No emojis. No bullet points. Just plain conversational explanation.
         return response.choices[0].message.content
     except Exception as e:
         return "I could not explain this error right now because the AI call failed."
-    
+
 
 def explain_question_answer(question, error_message):
     prompt = """
@@ -116,6 +116,7 @@ Reply with only one word: GOOD, PARTIAL, or BAD.
     except Exception as e:
         return "BAD"
 
+
 def validate_q3(question, error_message):
     prompt = """
 A quiz question was generated for a beginner coder who got this error:
@@ -143,7 +144,8 @@ Reply with only YES or NO.
         return "YES" in response.choices[0].message.content.strip().upper()
     except:
         return False
-    
+
+
 def get_hint(question, answer, error_message, attempt_number, question_number=1, grade="BAD"):
     if question_number == 3:
         context = "This is a fill in the blank question. Hint about what goes in the blank and why, not the original error."
@@ -205,7 +207,7 @@ Critical rules:
         return response.choices[0].message.content.strip()
     except Exception as e:
         return "I could not generate a hint right now because the AI call failed."
-    
+
 
 def get_difficulty(error_message):
     prompt = """
@@ -360,26 +362,14 @@ def question_user_webview(error_message):
         answer = message.get('answer', '')
         question = questions[q_num - 1]
 
-        # Handle "I don't know" answers
         lowered = answer.lower().strip()
         if lowered in ["i don't know", "i dont know", "dont know", "do not know", "not sure", "no idea"]:
-            dont_know_count[0] += 1
             total_dont_know += 1
             needed_hints = True
-
-            if dont_know_count[0] == 1:
-                total_hints_used += 1
-                hint = get_hint(question, answer, error_message, 1, q_num, 'BAD')
-                ipc.send_feedback('BAD', hint)
-                return
-            else:
-                # Second "I don't know" — give the answer and move on
-                question_results.append('BAD')
-                explanation = explain_question_answer(question, error_message)
-                ipc.send_feedback('SKIP', explanation)
-                dont_know_count[0] = 0
-                move_next_or_finish(q_num)
-                return
+            total_hints_used += 1
+            hint = get_hint(question, answer, error_message, 1, q_num, 'BAD')
+            ipc.send_feedback('BAD', hint)
+            return
 
         if is_nonsense(answer):
             ipc.send_feedback('BAD', 'That is not a real answer. Take a moment and try again.')
@@ -391,40 +381,26 @@ def question_user_webview(error_message):
         if result == 'GOOD':
             question_results.append('GOOD')
             dont_know_count[0] = 0
+            attempt_count[0] = 0
             ipc.send_feedback('GOOD', '')
             next_q = q_num + 1
             if next_q <= len(questions):
                 time.sleep(1.5)
                 ipc.send_next_question(questions[next_q - 1], next_q)
-                attempt_count[0] = 0
             else:
                 finish()
 
         elif result == 'PARTIAL':
             needed_hints = True
             total_hints_used += 1
-            if attempt_count[0] > 3:
-                question_results.append('PARTIAL')
-                explanation = explain_question_answer(question, error_message)
-                ipc.send_feedback('SKIP', explanation)
-                dont_know_count[0] = 0
-                move_next_or_finish(q_num)
-            else:
-                hint = get_hint(question, answer, error_message, attempt_count[0], q_num, 'PARTIAL')
-                ipc.send_feedback('PARTIAL', hint)
+            hint = get_hint(question, answer, error_message, attempt_count[0], q_num, 'PARTIAL')
+            ipc.send_feedback('PARTIAL', hint)
 
-        else:  # BAD
+        else:
             needed_hints = True
             total_hints_used += 1
-            if attempt_count[0] > 3:
-                question_results.append('BAD')
-                explanation = explain_question_answer(question, error_message)
-                ipc.send_feedback('SKIP', explanation)
-                dont_know_count[0] = 0
-                move_next_or_finish(q_num)
-            else:
-                hint = get_hint(question, answer, error_message, attempt_count[0], q_num, 'BAD')
-                ipc.send_feedback('BAD', hint)
+            hint = get_hint(question, answer, error_message, attempt_count[0], q_num, 'BAD')
+            ipc.send_feedback('BAD', hint)
 
     def handle_skip(message):
         nonlocal needed_hints
@@ -438,11 +414,12 @@ def question_user_webview(error_message):
         move_next_or_finish(q_num)
 
     def move_next_or_finish(q_num):
+        dont_know_count[0] = 0
+        attempt_count[0] = 0
         next_q = q_num + 1
         if next_q <= len(questions):
             time.sleep(1.5)
             ipc.send_next_question(questions[next_q - 1], next_q)
-            attempt_count[0] = 0
         else:
             finish()
 
@@ -484,11 +461,16 @@ def question_user_webview(error_message):
 
     done.wait()
 
+    def handle_close(message):
+        print("Received close signal")
+        done.set()
 
-def question_user(error_message):
-    """Original terminal-based function for fallback"""
-    print("\nBugBlock detected a bug!")
-    print("You cannot proceed until you understand it.\n")
+    ipc.on('close', handle_close)
+
+
+    def question_user(error_message):
+        print("\nBugBlock detected a bug!")
+        print("You cannot proceed until you understand it.\n")
 
     difficulty = get_difficulty(error_message)
     print("Difficulty: " + difficulty + "\n")

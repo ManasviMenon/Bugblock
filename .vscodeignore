@@ -1,0 +1,13 @@
+.env
+.git
+.gitignore
+.vscode
+__pycache__
+*.pyc
+*.db
+test.py
+test.db
+main.py
+error_catcher.py
+out
+node_modules

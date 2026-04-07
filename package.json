@@ -1,0 +1,46 @@
+{
+  "name": "bugblock-dev",
+  "publisher": "bugblock",
+  "displayName": "BugBlock - Error Learning Assistant",
+  "description": "AI-powered learning system that teaches you through your coding errors",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onLanguage:python",
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bugblock.start",
+        "title": "BugBlock: Start Learning"
+      },
+      {
+        "command": "bugblock.stop",
+        "title": "BugBlock: Stop"
+      },
+      {
+        "command": "bugblock.setApiKey",
+        "title": "BugBlock: Set Groq API Key"
+      }
+    ],
+    "configuration": {
+      "title": "BugBlock",
+      "properties": {
+        "bugblock.groqApiKey": {
+          "type": "string",
+          "description": "Your Groq API key for AI explanations"
+        },
+        "bugblock.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start BugBlock when VS Code opens"
+        }
+      }
+    }
+  }
+}

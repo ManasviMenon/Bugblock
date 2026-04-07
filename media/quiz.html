@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BugBlock</title>
+    <style>
+        :root {
+            --accent: #7c6af7;
+            --accent-2: #a78bfa;
+            --accent-dark: #5b4fcf;
+            --bg: #0f0f13;
+            --surface: #18181f;
+            --surface-2: #22222c;
+            --surface-3: #2a2a36;
+            --border: rgba(255,255,255,0.07);
+            --text: #f0f0f5;
+            --text-muted: #8888a0;
+            --text-dim: #5a5a72;
+            --good: #34d399;
+            --good-bg: rgba(52,211,153,0.1);
+            --warn: #fbbf24;
+            --warn-bg: rgba(251,191,36,0.1);
+            --bad: #f87171;
+            --bad-bg: rgba(248,113,113,0.1);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ── Layout ── */
+        #app {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            background: linear-gradient(90deg, var(--accent-2), #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 1px;
+        }
+
+        /* ── States ── */
+        .state { animation: fadeUp 0.25s ease; }
+        .state.hidden { display: none !important; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Loading ── */
+        #loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            gap: 20px;
+            color: var(--text-muted);
+        }
+
+        .loader {
+            position: relative;
+            width: 44px;
+            height: 44px;
+        }
+
+        .loader-ring {
+            width: 44px;
+            height: 44px;
+            border: 3px solid var(--surface-3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 0.9s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.6); }
+        }
+
+        .loading-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.4s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+            100% { content: ''; }
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card + .card { margin-top: 14px; }
+
+        .card-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header-icon { font-size: 14px; }
+
+        .card-header-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .card-body { padding: 18px; }
+
+        /* ── Error state ── */
+        .error-message {
+            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12.5px;
+            line-height: 1.7;
+            color: #fca5a5;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 180px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--surface-3) transparent;
+        }
+
+        .error-message::-webkit-scrollbar { width: 4px; }
+        .error-message::-webkit-scrollbar-track { background: transparent; }
+        .error-message::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-top: 12px;
+        }
+
+        .badge.easy   { background: rgba(52,211,153,0.12); color: var(--good); border: 1px solid rgba(52,211,153,0.25); }
+        .badge.medium { background: rgba(251,191,36,0.12); color: var(--warn); border: 1px solid rgba(251,191,36,0.25); }
+        .badge.hard   { background: rgba(248,113,113,0.12); color: var(--bad); border: 1px solid rgba(248,113,113,0.25); }
+
+        /* ── Quiz state ── */
+        .progress-track {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .progress-steps {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .step-dot {
+            flex: 1;
+            height: 4px;
+            background: var(--surface-3);
+            border-radius: 2px;
+            transition: background 0.3s ease;
+        }
+
+        .step-dot.active   { background: var(--accent); }
+        .step-dot.complete { background: var(--good); }
+
+        .progress-label {
+            font-size: 11px;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+
+        .question-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        textarea#answer-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface-2);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13.5px;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 90px;
+            transition: border-color 0.2s, background 0.2s;
+            outline: none;
+        }
+
+        textarea#answer-input:focus {
+            border-color: var(--accent);
+            background: var(--surface-3);
+        }
+
+        textarea#answer-input::placeholder { color: var(--text-dim); }
+
+        /* ── Hint box ── */
+        .hint-box {
+            background: var(--warn-bg);
+            border: 1px solid rgba(251,191,36,0.2);
+            border-left: 3px solid var(--warn);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            margin-top: 14px;
+            font-size: 13px;
+            color: #fde68a;
+            line-height: 1.6;
+        }
+
+        .hint-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--warn);
+            margin-bottom: 5px;
+        }
+
+        /* ── Feedback ── */
+        .feedback-box {
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            margin-top: 14px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .feedback-box.good    { background: var(--good-bg); color: var(--good); border: 1px solid rgba(52,211,153,0.2); }
+        .feedback-box.partial { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(251,191,36,0.2); }
+        .feedback-box.bad     { background: var(--bad-bg);  color: var(--bad);  border: 1px solid rgba(248,113,113,0.2); }
+
+        /* ── Buttons ── */
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            outline: none;
+            letter-spacing: 0.01em;
+        }
+
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            flex: 1;
+            box-shadow: 0 2px 12px rgba(124,106,247,0.3);
+        }
+
+        .btn-primary:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 18px rgba(124,106,247,0.45);
+        }
+
+        .btn-ghost {
+            background: var(--surface-2);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:not(:disabled):hover {
+            background: var(--surface-3);
+            color: var(--text);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .btn-danger {
+            background: rgba(248,113,113,0.1);
+            color: var(--bad);
+            border: 1px solid rgba(248,113,113,0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(248,113,113,0.18);
+            border-color: rgba(248,113,113,0.35);
+        }
+
+        .btn.hidden { display: none; }
+
+        /* ── Results ── */
+        .results-hero {
+            background: linear-gradient(135deg, rgba(124,106,247,0.15), rgba(167,139,250,0.08));
+            border: 1px solid rgba(124,106,247,0.2);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .trophy { font-size: 40px; margin-bottom: 10px; display: block; }
+
+        .results-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-2), #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .results-subtitle {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .xp-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-size: 22px;
+            font-weight: 800;
+            margin-top: 14px;
+            box-shadow: 0 4px 20px rgba(124,106,247,0.4);
+            letter-spacing: -0.5px;
+        }
+
+        .xp-pill span {
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0.85;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--accent-2);
+            line-height: 1;
+        }
+
+        .weak-spots-card {
+            background: var(--warn-bg);
+            border: 1px solid rgba(251,191,36,0.18);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+
+        .weak-spots-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--warn);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .weak-list { list-style: none; }
+
+        .weak-list li {
+            font-size: 12.5px;
+            color: #fde68a;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .weak-list li::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            background: var(--warn);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+
+        <!-- Header (always visible) -->
+        <div class="header">
+            <div class="header-icon">🪲</div>
+            <div>
+                <div class="header-title">BugBlock</div>
+                <div class="header-sub">Error Learning Assistant</div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="state">
+            <div class="loader">
+                <div class="loader-ring"></div>
+                <div class="loader-dot"></div>
+            </div>
+            <div class="loading-label">Analysing your error<span class="loading-dots"></span></div>
+        </div>
+
+        <!-- Error display -->
+        <div id="error-state" class="state hidden">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-header-icon">🐛</span>
+                    <span class="card-header-title">Error Detected</span>
+                </div>
+                <div class="card-body">
+                    <div id="error-message" class="error-message"></div>
+                    <div id="error-difficulty" class="badge"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div id="quiz-state" class="state hidden">
+            <!-- Error mini-card -->
+            <div class="card" style="margin-bottom:14px">
+                <div class="card-body" style="padding:12px 18px;">
+                    <div id="quiz-error-mini" class="error-message" style="max-height:60px; font-size:11.5px;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <!-- Progress -->
+                    <div class="progress-track">
+                        <div class="progress-steps">
+                            <div class="step-dot" id="step-1"></div>
+                            <div class="step-dot" id="step-2"></div>
+                            <div class="step-dot" id="step-3"></div>
+                        </div>
+                        <div class="progress-label" id="progress-label">Q1 of 3</div>
+                    </div>
+
+                    <!-- Question -->
+                    <p id="question-text" class="question-text"></p>
+
+                    <textarea id="answer-input" placeholder="Type your answer here…" rows="4"></textarea>
+
+                    <div id="hint-area" class="hidden">
+                        <div class="hint-box">
+                            <div class="hint-label">💡 Hint</div>
+                            <div id="hint-text"></div>
+                        </div>
+                    </div>
+
+                    <div id="feedback" class="feedback-box hidden"></div>
+
+                    <div class="btn-row">
+                        <button id="submit-btn" class="btn btn-primary">Submit</button>
+                        <button id="hint-btn" class="btn btn-ghost hidden">Hint</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results-state" class="state hidden">
+            <div class="results-hero">
+                <span class="trophy">🏆</span>
+                <div class="results-title">Session Complete</div>
+                <div class="results-subtitle">Great work pushing through that error</div>
+                <div class="xp-pill" id="xp-earned">+100 <span>XP</span></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Bugs Hit</div>
+                    <div class="stat-value" id="bugs-hit">1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Understood</div>
+                    <div class="stat-value" id="understood">1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Hints Used</div>
+                    <div class="stat-value" id="hints-used">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total XP</div>
+                    <div class="stat-value" id="total-xp">100</div>
+                </div>
+            </div>
+
+            <div id="weak-spots" class="weak-spots-card hidden">
+                <div class="weak-spots-title">⚠ Weak Spots</div>
+                <ul id="weak-list" class="weak-list"></ul>
+            </div>
+
+            <button id="close-btn" class="btn btn-danger" style="width:100%">End Session</button>
+        </div>
+
+    </div>
+    <script src="quiz.js"></script>
+</body>
+</html>

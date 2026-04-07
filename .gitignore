@@ -1,1 +1,7 @@
 .env
+__pycache__/
+*.pyc
+*.db
+*.vsix
+test.py
+test.db
