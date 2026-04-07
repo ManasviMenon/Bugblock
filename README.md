@@ -1,4 +1,4 @@
-# BugBlock 🪲
+# BugBlock 
 
 A VS Code extension that turns your Python errors into learning moments. When you save a buggy Python file, BugBlock catches the error, generates a 3-question quiz powered by Groq AI, and locks your editor until you answer — so you actually understand what went wrong.
 
